@@ -272,6 +272,8 @@ node farmer-market/verify-all.cjs
 
 **기록 원칙:** 이후 기능·화면·예시 데이터가 변경될 때마다 이 README의 개발 진행 기록에 변경 내용·검증 결과·남은 제한을 함께 반영한다.
 
+- **2026-11-10 / Vercel 연결 후 배포 시도:** Vercel 연결과 `doky` 팀 조회를 확인하고, 해당 팀에 `dokysmom/app`을 연결한 `young-farmers-market` 프로젝트 생성을 요청했다. Vercel API가 `403 forbidden: You don't have permission to create the project`로 거절하여 실제 프로젝트·배포 URL은 생성하지 못했다. 현재 환경에는 Vercel CLI가 없어 별도 CLI 인증으로 시도하지 않았다. 정적 빌드 설정과 검증된 `public/` 산출물은 보존했으며, Vercel의 프로젝트 생성 권한 확인 후 배포를 재개해야 한다. 연결 완료와 배포 완료는 구분한다.
+
 - **2026-11-10 / Vercel 페이지 배포 준비:** 저장소 루트 `vercel.json`과 `farmer-market/build-static.cjs`를 추가했다. `node farmer-market/build-static.cjs`는 정적 화면·스크립트·글꼴만 `public/`에 복사하며 DB·백엔드·테스트 수신함·환경 파일은 포함하지 않는다. 공개 미리보기에서는 회원가입·로그인·관리 기능을 안내 화면으로 전환하고 로컬 인증 코드는 보존했다. 전체 테스트를 통과했다. Vercel의 임시 파일시스템에서 현재 SQLite 인증 서버를 운영하는 대신 페이지를 먼저 공개하며, 운영 인증은 외부 영속 DB/메일 연결 후 별도 배포한다.
 
 - **2026-11-10 / GitHub 소스 정리:** [dokysmom/app](https://github.com/dokysmom/app) 저장소에 올릴 현재 4단계까지의 앱 소스·설계 문서·테스트·예시 이미지·Pretendard 라이선스 **40개 파일**을 정리했다. 루트 README에 실행 방법과 폴더 구성을 추가하고 전체 테스트를 다시 통과했다. 로컬 DB·시험 계정/세션·실제 환경 변수·키·다른 실습 자료는 제외했다. 업로드 대상은 개발 소스이며 실제 운영 배포는 아니다.
