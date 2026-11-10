@@ -1,0 +1,12 @@
+.farmer-market-data/
+**/node_modules/
+**/.env
+**/.env.*
+!**/.env.example
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.log
+github-export/
+app-source-stage4.zip

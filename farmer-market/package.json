@@ -1,0 +1,12 @@
+{
+  "name": "young-farmers-market",
+  "version": "0.4.0",
+  "private": true,
+  "engines": { "node": ">=24.22.1 <25" },
+  "scripts": {
+    "preview": "node server.cjs",
+    "db:init": "node backend/database.cjs --seed-demo",
+    "api": "node backend/dev-server.cjs",
+    "test": "node verify-all.cjs"
+  }
+}

@@ -1,0 +1,50 @@
+const assert=require('node:assert/strict');
+const {openDatabase,seedDemo}=require('./database.cjs');
+const {createApi}=require('./dev-server.cjs');
+async function main(){
+  const db=openDatabase(':memory:');
+  let server;
+  let previewServer;
+  try{
+    seedDemo(db);seedDemo(db);
+    assert.equal(db.prepare('SELECT count(*) n FROM farmers').get().n,10);
+    assert.equal(db.prepare('SELECT count(*) n FROM products').get().n,13);
+    assert.equal(db.prepare('PRAGMA user_version').get().user_version,2);
+    assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check,'ok');
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]);
+    assert.throws(()=>db.prepare("INSERT INTO variants VALUES('bad','missing','옵션',100,1,0)").run(),/FOREIGN KEY/);
+    assert.throws(()=>db.prepare("UPDATE variants SET stock=-1 WHERE id='apple-default'").run(),/CHECK/);
+    assert.throws(()=>db.prepare("UPDATE variants SET reserved=999 WHERE id='apple-default'").run(),/CHECK/);
+    db.prepare("INSERT INTO users(id,email,password_hash) VALUES('u1','sample@example.invalid','not-a-real-password-hash')").run();
+    assert.throws(()=>db.prepare("INSERT INTO users(id,email,password_hash) VALUES('u2','SAMPLE@example.invalid','x')").run(),/UNIQUE/);
+    const order="INSERT INTO orders(id,order_number,buyer_email,buyer_name,buyer_phone,recipient_json,status,subtotal,shipping_total,total,expires_at) VALUES(?,?,?,?,?,?,?,24000,3500,?,?)";
+    assert.throws(()=>db.prepare(order).run('bad','BAD','sample@example.invalid','예시','000','{}','pending_payment',1,'2099-01-01'),/CHECK/);
+    db.prepare(order).run('o1','ORDER1','sample@example.invalid','예시','000','{}','pending_payment',27500,'2099-01-01');
+    db.prepare("INSERT INTO shipment_groups(id,order_id,farmer_id,farmer_name_snapshot,shipping_fee,policy_snapshot_json) VALUES('g1','o1','f1','예시1',3500,'{}')").run();
+    db.prepare("INSERT INTO scoped_sessions(id,token_hash,csrf_hash,purpose,order_id,expires_at) VALUES('s1','scoped-hash','csrf-hash','guest_order','o1','2099-01-01')").run();
+    assert.throws(()=>db.prepare("INSERT INTO scoped_sessions(id,token_hash,csrf_hash,purpose,order_id,group_id,expires_at) VALUES('s2','other-hash','csrf-hash','guest_order','o1','g1','2099-01-01')").run(),/CHECK/);
+    assert.throws(()=>db.prepare("INSERT INTO order_items(id,group_id,farmer_id,product_id,variant_id,name_snapshot,option_snapshot,unit_price,quantity) VALUES('wrong','g1','f1','potato','potato-default','고구마','3kg',18000,1)").run(),/FOREIGN KEY/);
+    const token=db.prepare("INSERT INTO access_tokens(id,token_hash,purpose,expires_at) VALUES(?,?,?,?)");
+    token.run('t1','hash-placeholder','verify_email','2099-01-01');
+    assert.throws(()=>token.run('t2','hash-placeholder','reset_password','2099-01-01'),/UNIQUE/);
+    const key=db.prepare("INSERT INTO idempotency_keys(scope,key,actor_hash,request_hash,status,expires_at) VALUES('order','key1','actor1','request1','processing','2099-01-01')");key.run();assert.throws(()=>key.run(),/UNIQUE/);
+    db.exec('BEGIN IMMEDIATE;');db.prepare("UPDATE variants SET reserved=1 WHERE id='apple-default'").run();db.exec('ROLLBACK;');assert.equal(db.prepare("SELECT reserved FROM variants WHERE id='apple-default'").get().reserved,0);
+    server=createApi(db);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const base=`http://127.0.0.1:${server.address().port}`;
+    const health=await(await fetch(base+'/api/health')).json();assert.equal(health.authImplemented,false);
+    const listing=await(await fetch(base+'/api/v1/farmers?page=2&pageSize=9')).json();assert.equal(listing.total,10);assert.equal(listing.data[0].name,'예시10');assert.ok(!('notification_email' in listing.data[0]));
+    const products=await(await fetch(base+'/api/v1/products?farmerId=example-10')).json();assert.equal(products.total,1);assert.equal(products.data[0].id,'naju-pear');
+    db.prepare("UPDATE farmers SET published=0 WHERE id='f1'").run();assert.equal((await(await fetch(base+'/api/v1/farmers')).json()).total,9);
+    assert.equal((await fetch(base+'/api/v1/farmers?page=0')).status,400);
+    assert.equal((await fetch(base+'/api/v1/farmers',{method:'POST'})).status,405);
+    assert.equal((await fetch(base+'/api/v1/auth/login')).status,404);
+    const {createPreviewServer}=require('../server.cjs');previewServer=createPreviewServer();await new Promise(resolve=>previewServer.listen(0,'127.0.0.1',resolve));
+    const previewBase=`http://127.0.0.1:${previewServer.address().port}`;
+    assert.equal((await fetch(previewBase+'/')).status,200);
+    assert.equal((await fetch(previewBase+'/backend/schema.sql')).status,404);
+    assert.equal((await fetch(previewBase+'/.env')).status,404);
+    assert.equal((await fetch(previewBase+'/data/market.sqlite')).status,404);
+    console.log('PASS: DB 생성·중복 시드·외래키·재고·주문 금액·농부별 상품 분리·토큰/멱등키 유일성·롤백·읽기 API·공개 필터·오류 응답');
+  }finally{if(previewServer)await new Promise(resolve=>previewServer.close(resolve));if(server)await new Promise(resolve=>server.close(resolve));db.close();}
+}
+main().catch(err=>{console.error(err);process.exitCode=1;});
