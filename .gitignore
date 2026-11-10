@@ -10,3 +10,5 @@
 *.log
 github-export/
 app-source-stage4.zip
+public/
+.vercel/
