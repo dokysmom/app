@@ -2,6 +2,8 @@
 
 청년 농부의 제철 농산물을 소개하고 판매하는 웹앱의 개발 프로젝트입니다. 현재 회원 인증을 연결한 로컬 개발 단계입니다.
 
+**공개 페이지 미리보기:** [https://app-farmer-market.vercel.app](https://app-farmer-market.vercel.app) — 상품·농부 소개·페이징·장바구니 화면을 확인할 수 있습니다. 공개 버전은 회원가입·로그인·결제를 제공하지 않으며 로컬 인증 구현과 구분합니다.
+
 ## 빠른 실행
 
 Node.js **24.22.1 이상 24.x** 환경에서 저장소 루트에서 실행합니다. 외부 패키지 설치는 필요하지 않습니다.
@@ -271,6 +273,10 @@ node farmer-market/verify-all.cjs
 ### 개발 진행 기록
 
 **기록 원칙:** 이후 기능·화면·예시 데이터가 변경될 때마다 이 README의 개발 진행 기록에 변경 내용·검증 결과·남은 제한을 함께 반영한다.
+
+- **2026-11-10 / Vercel Production 배포 완료:** 브라우저의 `doky` 팀 가져오기 화면에서 Root Directory를 `farmer-market`에서 저장소 최상위 `./`로 바꾸고 Application Preset을 Node에서 Other로 변경했다. Build Command `node farmer-market/build-static.cjs`, Output Directory `public`을 유지해 중복 경로 `farmer-market/farmer-market/`로 발생한 MODULE_NOT_FOUND를 해결했다. 프로젝트 `app-farmer-market`, 배포 ID `dpl_EGwjkpBZ13qwYLSqLoT1QLwjeEZH`, 배포 소스 `452db8e18db4fb9eb37b65cc0c4fcc802b15ae8a`에서 Production 성공을 확인했다.
+  - 공개 주소: [https://app-farmer-market.vercel.app](https://app-farmer-market.vercel.app). 실제 브라우저에서 첫 화면 표시, 홈 상품 4페이지의 나주 배, 농부 2페이지의 예시10, 공개 로그인 경로의 ‘회원 기능 준비 중’ 안내를 검증했다.
+  - 이전 연결 도구의 403/404 기록은 당시 API 접근 결과다. 이번에는 사용자가 생성한 가져오기 화면을 통해 설정을 수정·배포했으며, 더 이상 실제 공개 배포가 미완료인 상태가 아니다. 단, 공개 정적 페이지의 성공이지 SQLite 인증 서버·실제 결제·메일 운영 배포가 완료된 것은 아니다.
 
 - **2026-11-10 / Vercel 재시도:** 사용자 재시도 요청에 따라 `doky` 팀의 대상 프로젝트가 아직 없음을 확인하고 동일한 `young-farmers-market` 생성·배포를 다시 요청했다. Vercel이 다시 `403 forbidden: You don't have permission to create the project`를 반환했다. 실제 배포 URL은 여전히 없으며, 코드/빌드 오류가 아니라 프로젝트 생성 권한 단계에서 차단된 상태다.
 
